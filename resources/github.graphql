@@ -1,0 +1,22 @@
+query SearchPullRequest($query:String!) {
+  search(query:$query, type:ISSUE, first:100) {
+    nodes {
+      ... on PullRequest {
+        id
+        createdAt
+        updatedAt
+        mergedAt
+        author {login}
+        repository {name}
+        url
+        title}}}}
+
+query Users($org:String!) {
+  organization(login:$org) {
+    membersWithRole(first:100){
+      nodes {
+        ... on User {
+          login
+          name
+          url
+          avatarUrl}}}}}
