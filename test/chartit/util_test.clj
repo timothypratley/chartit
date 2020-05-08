@@ -46,11 +46,27 @@
 
 (deftest with-rolling-test
   (is (= '([:a 1 nil]
-           [:b 2 nil]
-           [:c 3 1.5]
-           [:d 4 2.5]
-           [:e 5 3.5])
-         (util/with-rolling [[:a 1] [:b 2] [:c 3] [:d 4] [:e 5]] 2))))
+           [:b 2 1.5]
+           [:c 3 2.5]
+           [:d 4 3.5]
+           [:e 5 4.5])
+         (util/with-rolling [[:a 1]
+                             [:b 2]
+                             [:c 3]
+                             [:d 4]
+                             [:e 5]]
+                            2))))
 
-(deftest label-periods-test
-  (is (util/label-periods {:t (java.util.Date.)} :t)))
+(deftest group-by-groups-test
+  (is (= {:a [{:groups #{:a :b}}
+              {:groups #{:a :b :c}}
+              {:groups #{:a :c}}]
+          :b [{:groups #{:a :b}}
+              {:groups #{:a :b :c}}]
+          :c [{:groups #{:c}}
+              {:groups #{:a :b :c}}
+              {:groups #{:a :c}}]}
+         (util/group-by-groups :groups [{:groups #{:a :b}}
+                                        {:groups #{:c}}
+                                        {:groups #{:a :b :c}}
+                                        {:groups #{:a :c}}]))))

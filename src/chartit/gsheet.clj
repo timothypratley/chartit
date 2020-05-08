@@ -69,8 +69,8 @@
   (or (find-spreadsheet title)
       (create-spreadsheet title)))
 
-(defn pull-request-velocity-chart-spec [sheet-id title number-of-rows]
-  {"title"                   (str "Pull Request Velocity: " title)
+(defn rolling-averages-chart-spec [sheet-id title end-row-index]
+  {"title"                   title
    "fontName"                "Roboto",
    "hiddenDimensionStrategy" "SKIP_HIDDEN_ROWS_AND_COLUMNS"
    "basicChart"              {"axis"        [{"position"          "BOTTOM_AXIS",
@@ -79,31 +79,31 @@
                                              {"position" "LEFT_AXIS", "viewWindowOptions" {}}],
                               "chartType"   "LINE",
                               "domains"     [{"domain" {"sourceRange" {"sources" [{"endColumnIndex"   1,
-                                                                                   "endRowIndex"      number-of-rows,
+                                                                                   "endRowIndex"      end-row-index,
                                                                                    "sheetId"          sheet-id,
                                                                                    "startColumnIndex" 0,
                                                                                    "startRowIndex"    0}]}}}],
                               "headerCount" 1,
                               "series"      [{"series"     {"sourceRange" {"sources" [{"endColumnIndex"   2,
-                                                                                       "endRowIndex"      number-of-rows,
+                                                                                       "endRowIndex"      end-row-index,
                                                                                        "sheetId"          sheet-id,
                                                                                        "startColumnIndex" 1,
                                                                                        "startRowIndex"    0}]}},
                                               "targetAxis" "LEFT_AXIS"}
                                              {"series"     {"sourceRange" {"sources" [{"endColumnIndex"   3,
-                                                                                       "endRowIndex"      number-of-rows,
+                                                                                       "endRowIndex"      end-row-index,
                                                                                        "sheetId"          sheet-id,
                                                                                        "startColumnIndex" 2,
                                                                                        "startRowIndex"    0}]}},
                                               "targetAxis" "LEFT_AXIS"}
                                              {"series"     {"sourceRange" {"sources" [{"endColumnIndex"   4,
-                                                                                       "endRowIndex"      number-of-rows,
+                                                                                       "endRowIndex"      end-row-index,
                                                                                        "sheetId"          sheet-id,
                                                                                        "startColumnIndex" 3,
                                                                                        "startRowIndex"    0}]}},
                                               "targetAxis" "LEFT_AXIS"}
                                              {"series"     {"sourceRange" {"sources" [{"endColumnIndex"   5,
-                                                                                       "endRowIndex"      number-of-rows,
+                                                                                       "endRowIndex"      end-row-index,
                                                                                        "sheetId"          sheet-id,
                                                                                        "startColumnIndex" 4,
                                                                                        "startRowIndex"    0}]}},
@@ -115,7 +115,7 @@
                                            "anchorCell"   {"rowIndex"    2
                                                            "columnIndex" 0
                                                            "sheetId"     sheet-id}}}
-            "spec"     (pull-request-velocity-chart-spec sheet-id title number-of-rows)}})
+            "spec"     (rolling-averages-chart-spec sheet-id title (inc number-of-rows))}})
 
 (defn create-chart
   "If chart-id supplied, will delete and recreate, otherwise creates new"

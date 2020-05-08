@@ -30,7 +30,7 @@
   (is (gsheet/ensure-spreadsheet test-sheet-title)))
 
 (deftest pull-request-velocity-chart-spec-test
-  (is (gsheet/pull-request-velocity-chart-spec 1182968322 "title" 100)))
+  (is (gsheet/rolling-averages-chart-spec 1182968322 "title" 100)))
 
 (deftest create-velocity-chart-test
   (let [{{:keys [sheetId]} :properties, [{:keys [chartId]}] :charts}

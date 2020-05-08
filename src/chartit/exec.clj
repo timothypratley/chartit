@@ -1,6 +1,7 @@
 (ns chartit.exec
   (:require [chartit.clubhouse :as clubhouse]
             [chartit.github :as github]
+            [chartit.graphql :as graphql]
             [chartit.gsheet :as gsheet]
             [chartit.justworks :as justworks]
             [chartit.util :as util]
@@ -9,68 +10,75 @@
             [clojure.set :as set]
             [clojure.string :as str]
             [fipp.edn :as fipp]
-            [chartit.graphql :as graphql]))
+            [chartit.config :as config]))
 
 ;; TODO: start-date
 ;; TODO: plot start-dates
 ;; TODO: list members
 
-(def write-backend #{"iwillig" "rads"})
-(def write-frontend #{"jaunpasolano" "christinecha"})
-(def enhance-backend #{"opoku" "semperos" "jeremyheiler"})
-(def enhance-frontend #{"maryjenel" "charpeni" "bwittenberg"})
-(def acquire-backend #{"tobias" "Scriptor" "enaeher" "favila"})
-(def acquire-frontend #{"rinchen" "teimurjan"})
-(def platform #{"crohacz" "pgroudas"})
-(def backend (set/union acquire-backend enhance-backend write-backend))
-(def frontend (set/union acquire-frontend enhance-frontend write-frontend))
-
 (def github-login-groups
-  {"engineering" (set/union backend frontend platform)
-   "backend" backend
-   "frontend" frontend
-   "acquire" (set/union acquire-backend acquire-frontend)
-   "enhance" (set/union enhance-backend enhance-frontend)
-   "write" (set/union write-backend write-frontend)
-   "platform" platform})
+  (config/get-config [:github-login-groups]))
 
-(defn upload-pull-requests [spreadsheet-id pull-requests]
-  (gsheet/set-sheet-data spreadsheet-id "pull_requests"
-                         (github/pull-requests-as-rows pull-requests)))
+(defn upload-pull-requests [spreadsheet-title pull-requests]
+  (let [spreadsheet-id (gsheet/ensure-spreadsheet spreadsheet-title)]
+    (gsheet/set-sheet-data spreadsheet-id "pull_requests"
+                           (github/pull-requests-as-rows pull-requests))))
 
-;; TODO: divide by group size
-(defn bucket-prs [pull-requests]
-  (util/buckets2rows
-   (util/bucket-by :mergedAt count pull-requests)))
-
-(defn upload-sheet-and-chart [spreadsheet-id title pull-requests]
-  (gsheet/set-sheet-data spreadsheet-id title
-                   (github/pull-requests-as-rows pull-requests))
+(defn upload-sheet-and-chart [spreadsheet-id title metric rows buckets]
+  (gsheet/set-sheet-data spreadsheet-id title rows)
   (let [{{:keys [sheetId]} :properties, [{:keys [chartId]}] :charts}
         (gsheet/ensure-sheet spreadsheet-id (str title "_weekly"))]
     (gsheet/set-data spreadsheet-id (str title "_weekly")
-                     (cons ["week" "count" "4 week average" "quarterly average" "6 month average"]
-                           (-> (bucket-prs pull-requests)
+                     (cons ["week" metric "4 week average" "quarterly average" "6 month average"]
+                           (-> buckets
                                (util/with-rolling 4)
                                (util/with-rolling 13)
                                (util/with-rolling 26))))
-    (gsheet/create-velocity-chart spreadsheet-id sheetId chartId title (inc (count pull-requests)))))
+    (gsheet/create-velocity-chart spreadsheet-id sheetId chartId title (count rows))))
 
-(defn create-sheet-per-group [spreadsheet-id pull-requests]
-  (doseq [[group logins] github-login-groups]
-    (let [pull-requests (filter #(-> % :author :login logins) pull-requests)]
-      (upload-sheet-and-chart spreadsheet-id group pull-requests))))
-
-(defn create-sheet-per-login [spreadsheet-id pull-requests]
-  (let [pull-requests-by-login (group-by #(-> % :author :login) pull-requests)]
-    (doseq [[login pull-requests] (sort-by #(str/capitalize (key %)) pull-requests-by-login)]
-      (upload-sheet-and-chart spreadsheet-id login pull-requests))))
+(defn create-sheets [spreadsheet-title m metric row-fn bucket-fn]
+  (let [spreadsheet-id (gsheet/ensure-spreadsheet spreadsheet-title)]
+    (doseq [[k vs] (sort-by #(str/capitalize (key %)) m)]
+      (upload-sheet-and-chart spreadsheet-id
+                              k
+                              metric
+                              (row-fn vs)
+                              (bucket-fn vs)))))
 
 (defn upload-github-gsheet [pull-requests]
-  (let [spreadsheetId (gsheet/ensure-spreadsheet "Clubhouse git charts")]
-    (upload-pull-requests spreadsheetId pull-requests)
-    (create-sheet-per-group spreadsheetId pull-requests)
-    (create-sheet-per-login spreadsheetId pull-requests)))
+  #_(upload-pull-requests "Clubhouse all pull requests" pull-requests)
+  #_(create-sheets "Clubhouse pull requests by person"
+                 (group-by #(-> % :author :login)
+                           pull-requests)
+                 github/pull-requests-as-rows
+                 github/bucket-pull-requests)
+  #_(create-sheets "Clubhouse pull request reviews by person"
+                 (group-by #(-> % :author :login)
+                           (github/reviews pull-requests))
+                 github/reviews-as-rows
+                 github/bucket-reviews)
+  (create-sheets "Clubhouse pull request review time by person"
+                 (group-by #(-> % :author :login)
+                           (github/reviews pull-requests))
+                 "mean hours to review"
+                 github/reviews-as-rows
+                 github/bucket-review-times)
+  #_(create-sheets "Clubhouse pull requests by group"
+                 (util/group-by-groups #(-> % :author :login github-login-groups)
+                                       pull-requests)
+                 github/pull-requests-as-rows
+                 github/bucket-pull-requests)
+  #_(create-sheets "Clubhouse pull request reviews by group"
+                 (util/group-by-groups #(-> % :author :login github-login-groups)
+                                       (github/reviews pull-requests))
+                 github/reviews-as-rows
+                 github/bucket-reviews)
+  (create-sheets "Clubhouse pull request review time by group"
+                 (util/group-by-groups #(-> % :author :login github-login-groups)
+                                       (github/reviews pull-requests))
+                 "mean hours to review"
+                 github/reviews-as-rows
+                 github/bucket-review-times))
 
 (defn github-gsheet []
   (println "Github: Fetching")
@@ -81,11 +89,11 @@
                         (edn/read-string (slurp data-file)))
         last-updated (last (sort (map :updatedAt pull-requests)))
         new-pull-requests (github/all-pull-requests last-updated)
-        pull-requests (remove github/pull-request-by-bot? (concat pull-requests new-pull-requests))
+        pull-requests (concat pull-requests new-pull-requests)
         pull-requests (github/dedupe-updated-pull-requests pull-requests)
         pull-requests (sort-by :mergedAt pull-requests)]
     (println "Github: Fetched" (count new-pull-requests) "new pull requests, now have" (count pull-requests))
-    (when (seq new-pull-requests)
+    (when true ;;(seq new-pull-requests)
       (spit data-file (with-out-str (fipp/pprint pull-requests)))
       (upload-github-gsheet pull-requests))))
 
@@ -135,10 +143,10 @@
     (gsheet/set-sheet-data spreadsheetId "Justworks"
                            (graphql/nodes2rows (justworks/company-directory)))
     (gsheet/set-sheet-data spreadsheetId "Github"
-                           (graphql/nodes2rows (github/users "clubhouse")))))
+                           (graphql/nodes2rows (github/users)))))
 
 (comment
- (def g (github/users "clubhouse"))
+ (def g (github/users))
  (def j (justworks/company-directory))
  (def g2 (util/index-by :name g))
  (defn fname [s]
@@ -164,4 +172,4 @@
   :done)
 
 (comment
- (-main))
+  (-main))

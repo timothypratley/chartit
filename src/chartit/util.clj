@@ -105,15 +105,7 @@
     (buckets2rows
       (bucket-by time-fn #(stats-by scalar-fn %) entities))))
 
-(defn label-periods [m time-fn]
-  (let [at (est (time-fn m))]
-    (assoc m :mergedAt (year-month-day at)
-             :week (year-week at)
-             :month (year-month at)
-             :quarter (year-quarter at)
-             :year (year at))))
-
-(defn fix-dates
+(defn parse-dates
   "Convert date-fields to dates.
   Useful when handling JSON (which does not have a date type)."
   [x date-fields]
@@ -127,6 +119,27 @@
 (defn with-rolling
   "Given a sequence of ([label scalar]) conjs on a moving average of the last n scalars."
   [rows n]
-  (map conj rows (concat (repeat n nil)
+  (map conj rows (concat (repeat (dec n) nil)
                          (map #(/ (double (reduce + %)) n)
                               (partition n 1 (map second rows))))))
+
+(defn hours-between [a b]
+  (when (and a b)
+    (/ (t/time-between (t/instant a) (t/instant b) :seconds) 60.0 60.0)))
+
+(defn group-by-groups
+  "Returns a map of the elements of coll keyed by the result of
+  f on each element. The value at each key will be a vector of the
+  corresponding elements, in the order they appeared in coll."
+  [f coll]
+  (persistent!
+    (reduce
+      (fn [acc x]
+        (let [ks (f x)]
+          (reduce
+            (fn [acc k]
+              (assoc! acc k (conj (get acc k []) x)))
+            acc
+            ks)))
+      (transient {})
+      coll)))

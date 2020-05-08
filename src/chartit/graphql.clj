@@ -22,7 +22,8 @@
       (b/query-map parsed))))
 
 (defn fetch-all
-  "Given a fetch function that takes a cursor, fetch all pages of data available."
+  "Given a fetch function that takes a cursor, fetch all pages of data available.
+  Does not yet support multiple cursors."
   [f & args]
   (loop [response (apply f nil args)
          acc ()]
@@ -44,7 +45,7 @@
              (list (list k))))))
 
 (defn nodes2rows
-  "GraphQL returns a graph that open we want to turn into rows."
+  "GraphQL returns a graph that we want to turn into rows."
   [xs]
   (when (seq xs)
     (let [a (first xs)

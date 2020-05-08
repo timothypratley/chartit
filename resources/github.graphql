@@ -9,7 +9,14 @@ query SearchPullRequest($query:String!) {
         author {login}
         repository {name}
         url
-        title}}}}
+        title
+        reviews(first:20) {
+          nodes {
+            ... on PullRequestReview {
+              author {login}
+              state
+              submittedAt
+              url}}}}}}}
 
 query Users($org:String!) {
   organization(login:$org) {

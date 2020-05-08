@@ -25,7 +25,7 @@
   (->> (io/file "data" (str type ".json"))
        (slurp)
        (#(json/parse-string % true))
-       (map #(util/fix-dates % date-fields))))
+       (map #(util/parse-dates % date-fields))))
 
 (json/parse-string (slurp "secret.json") true)
 
