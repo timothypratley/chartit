@@ -32,7 +32,9 @@
 
 (deftest stats-by-test
   (is (util/bucket-by :t #(util/stats-by :v %)
-                      [{:t (t/minus (util/end-of-week) (t/days 1))
+                      [{:t (t/minus (util/end-of-week) (t/days 8))
+                        :v 42.0}
+                       {:t (t/minus (util/end-of-week) (t/days 1))
                         :v 42.0}
                        {:t (util/end-of-week)
                         :v 11.1}])))

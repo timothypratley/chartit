@@ -4,12 +4,9 @@
             [chartit.graphql :as graphql]
             [chartit.gsheet :as gsheet]
             [chartit.justworks :as justworks]
+            [chartit.local-file :as local-file]
             [chartit.util :as util]
-            [clojure.edn :as edn]
-            [clojure.java.io :as io]
-            [clojure.set :as set]
             [clojure.string :as str]
-            [fipp.edn :as fipp]
             [chartit.config :as config]))
 
 ;; TODO: start-date
@@ -46,15 +43,17 @@
                               (bucket-fn vs)))))
 
 (defn upload-github-gsheet [pull-requests]
-  #_(upload-pull-requests "Clubhouse all pull requests" pull-requests)
-  #_(create-sheets "Clubhouse pull requests by person"
+  (upload-pull-requests "Clubhouse all pull requests" pull-requests)
+  (create-sheets "Clubhouse pull requests by person"
                  (group-by #(-> % :author :login)
                            pull-requests)
+                 "pull requests merged"
                  github/pull-requests-as-rows
                  github/bucket-pull-requests)
-  #_(create-sheets "Clubhouse pull request reviews by person"
+  (create-sheets "Clubhouse pull request reviews by person"
                  (group-by #(-> % :author :login)
                            (github/reviews pull-requests))
+                 "reviews submitted"
                  github/reviews-as-rows
                  github/bucket-reviews)
   (create-sheets "Clubhouse pull request review time by person"
@@ -63,14 +62,16 @@
                  "mean hours to review"
                  github/reviews-as-rows
                  github/bucket-review-times)
-  #_(create-sheets "Clubhouse pull requests by group"
+  (create-sheets "Clubhouse pull requests by group"
                  (util/group-by-groups #(-> % :author :login github-login-groups)
                                        pull-requests)
+                 "pull requests merged"
                  github/pull-requests-as-rows
                  github/bucket-pull-requests)
-  #_(create-sheets "Clubhouse pull request reviews by group"
+  (create-sheets "Clubhouse pull request reviews by group"
                  (util/group-by-groups #(-> % :author :login github-login-groups)
                                        (github/reviews pull-requests))
+                 "reviews submitted"
                  github/reviews-as-rows
                  github/bucket-reviews)
   (create-sheets "Clubhouse pull request review time by group"
@@ -82,19 +83,15 @@
 
 (defn github-gsheet []
   (println "Github: Fetching")
-  ;; TODO: decomplect data storage
-  (.mkdirs (io/file "data"))
-  (let [data-file (io/file "data" "pull_requests.edn")
-        pull-requests (when (.exists data-file)
-                        (edn/read-string (slurp data-file)))
-        last-updated (last (sort (map :updatedAt pull-requests)))
+  (let [pull-requests (local-file/load "pull_requests")
+        last-updated (->> pull-requests (map :updatedAt) (sort) (last))
         new-pull-requests (github/all-pull-requests last-updated)
         pull-requests (concat pull-requests new-pull-requests)
         pull-requests (github/dedupe-updated-pull-requests pull-requests)
         pull-requests (sort-by :mergedAt pull-requests)]
     (println "Github: Fetched" (count new-pull-requests) "new pull requests, now have" (count pull-requests))
-    (when true ;;(seq new-pull-requests)
-      (spit data-file (with-out-str (fipp/pprint pull-requests)))
+    (when true #_(seq new-pull-requests)
+      (local-file/save "pull_requests" pull-requests)
       (upload-github-gsheet pull-requests))))
 
 ;; TODO: percentiles? % in target range?
@@ -111,9 +108,11 @@
 (defn clubhouse-statistics-gsheet [spreadsheet-id]
   (doseq [[data-label stories] clubhouse-data-sets
           [stat-label scalar-fn] clubhouse-statistics
-          :let [title (str stat-label " weekly " data-label)]]
-    (gsheet/set-sheet-data spreadsheet-id title
-                           (clubhouse/bucket-stats stories scalar-fn))))
+          :let [title (str stat-label " weekly " data-label)
+                stats (clubhouse/bucket-stats stories scalar-fn)]]
+    (gsheet/set-sheet-data spreadsheet-id title stats)))
+
+#_(clubhouse/bucket-stats clubhouse/features clubhouse/story-lead-days)
 
 (defn clubhouse-open-closed-gsheet [spreadsheet-id]
   (let [open-closed (clubhouse/open-vs-closed (clubhouse/remove-archived-incomplete clubhouse/all-stories))]
