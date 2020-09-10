@@ -6,8 +6,6 @@
             [clojure.java.io :as io]
             [java-time :as t]
             [clojure.string :as str]
-            [meander.epsilon :as m]
-            [meander.strategy.epsilon :as s]
             [incanter.stats :as stats]))
 
 (def endpoint "https://api.github.com/graphql")
@@ -115,7 +113,9 @@
 
 (defn groom-pull-request [pull-request]
   (-> pull-request
-      (select-keys [:mergedAt :author :url :title])
+      (select-keys [:mergedAt :author :assignees :url :title])
+      (update :assignees (fn [assignees]
+                           (str/join " " (map :login (:nodes assignees)))))
       (merge (calc-pull-request-review-hours pull-request))
       (label-periods :mergedAt)))
 

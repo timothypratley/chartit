@@ -13,13 +13,29 @@
   []
   (Thread/sleep 1000))
 
+(defn retry
+  [retries f & args]
+  (let [res (try {:value (apply f args)}
+                 (catch Exception e
+                   (println "Retrying...")
+                   (if (zero? retries)
+                     (throw e)
+                     {:exception e})))]
+    (if (:exception res)
+      (recur (dec retries) f args)
+      (:value res))))
+
+(defn batch-update [spreadsheet-id range values]
+  (retry 3 (fn []
+             (g.sheets/values-batchUpdate$ (credentials/auth!)
+                                           {:spreadsheetId spreadsheet-id}
+                                           {"valueInputOption" "USER_ENTERED"
+                                            "data"             [{"range"  range
+                                                                 "values" values}]}))))
+
 (defn set-data [spreadsheet-id range values]
   (nap)
-  (-> (g.sheets/values-batchUpdate$ (credentials/auth!)
-                                    {:spreadsheetId spreadsheet-id}
-                                    {"valueInputOption" "USER_ENTERED"
-                                     "data"             [{"range"  range
-                                                          "values" values}]})
+  (-> (batch-update spreadsheet-id range values)
       (doto (-> (:responses)
                 (first)
                 (:updatedRange)

@@ -124,8 +124,12 @@
                               (partition n 1 (map second rows))))))
 
 (defn hours-between [a b]
-  (when (and a b)
-    (/ (t/time-between (t/instant a) (t/instant b) :seconds) 60.0 60.0)))
+  (if (and a b)
+    (format "%.3f"
+            (/ (t/time-between (t/instant a) (t/instant b) :seconds)
+               60.0
+               60.0))
+    "N/A"))
 
 (defn group-by-groups
   "Returns a map of the elements of coll keyed by the result of

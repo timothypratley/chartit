@@ -12,7 +12,7 @@
 (defn location ^File [k]
   (io/file folder (str (name k) ".edn")))
 
-(defn load [k]
+(defn read-file [k]
   (let [file (location k)]
     (when (.exists file)
       (edn/read-string (slurp file)))))

@@ -7,6 +7,13 @@ query SearchPullRequest($query:String!) {
         updatedAt
         mergedAt
         author {login}
+        assignees(first:20) {
+          nodes {
+            ... on User {
+              login
+            }
+          }
+        }
         repository {name}
         url
         title

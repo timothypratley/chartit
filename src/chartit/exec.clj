@@ -83,7 +83,7 @@
 
 (defn github-gsheet []
   (println "Github: Fetching")
-  (let [pull-requests (local-file/load "pull_requests")
+  (let [pull-requests (local-file/read-file "pull_requests")
         last-updated (->> pull-requests (map :updatedAt) (sort) (last))
         new-pull-requests (github/all-pull-requests last-updated)
         pull-requests (concat pull-requests new-pull-requests)
