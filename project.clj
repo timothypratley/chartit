@@ -9,25 +9,26 @@
   :main chartit.exec
 
   :dependencies [[org.clojure/clojure "1.10.1"]
-                 [org.clojure/clojurescript "1.10.597"]
-                 [org.clojure/core.async  "0.7.559"]
-                 [org.clojure/data.csv "0.1.4"]
+                 [org.clojure/clojurescript "1.10.773"]
+                 [org.clojure/core.async  "1.3.610"]
+                 [org.clojure/data.csv "1.0.0"]
                  [org.clojure/java.jdbc "0.7.11"]
-                 [org.xerial/sqlite-jdbc "3.30.1"]
-                 [reagent "0.9.1"]
-                 [fipp "0.6.22"]
-                 [floatingpointio/graphql-builder "0.1.8"]
+                 [org.xerial/sqlite-jdbc "3.32.3.2"]
+                 [reagent "0.10.0"]
+                 [fipp "0.6.23"]
+                 [floatingpointio/graphql-builder "0.1.13"]
+                 [instaparse "1.4.10"]
                  [happygapi "0.4.2"]
                  [hickory "0.7.1"]
                  [incanter "1.9.3"]
-                 [meander/epsilon "0.0.373"]
-                 [clj-http "3.10.0"]
-                 [cheshire "5.9.0"]
+                 [meander/epsilon "0.0.488"]
+                 [clj-http "3.10.2"]
+                 [cheshire "5.10.0"]
                  [clojure.java-time "0.3.2"]
-                 [ring "1.8.0"]]
+                 [ring "1.8.1"]]
 
-  :plugins [[lein-figwheel "0.5.19"]
-            [lein-cljsbuild "1.1.7" :exclusions [[org.clojure/clojure]]]]
+  :plugins [[lein-figwheel "0.5.20"]
+            [lein-cljsbuild "1.1.8" :exclusions [[org.clojure/clojure]]]]
 
   :source-paths ["src"]
 
@@ -54,8 +55,8 @@
 
   :figwheel {:css-dirs ["resources/public/css"]}
 
-  :profiles {:dev {:dependencies [[binaryage/devtools "0.9.11"]
-                                  [figwheel-sidecar "0.5.19"]]
+  :profiles {:dev {:dependencies [[binaryage/devtools "1.0.2"]
+                                  [figwheel-sidecar "0.5.20"]]
                    :source-paths ["src" "dev"]
                    :clean-targets ^{:protect false} ["resources/public/js/compiled"
                                                      :target-path]}})

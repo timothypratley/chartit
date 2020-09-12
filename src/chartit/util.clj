@@ -123,13 +123,14 @@
                          (map #(/ (double (reduce + %)) n)
                               (partition n 1 (map second rows))))))
 
+(defn round [x]
+  (/ (Math/round (* 100.0 x)) 100.0))
+
 (defn hours-between [a b]
-  (if (and a b)
-    (format "%.3f"
-            (/ (t/time-between (t/instant a) (t/instant b) :seconds)
-               60.0
-               60.0))
-    "N/A"))
+  (when (and a b)
+    (round (/ (t/time-between (t/instant a) (t/instant b) :seconds)
+              60.0
+              60.0))))
 
 (defn group-by-groups
   "Returns a map of the elements of coll keyed by the result of

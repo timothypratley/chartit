@@ -6,7 +6,8 @@
             [clojure.java.io :as io]
             [java-time :as t]
             [clojure.string :as str]
-            [incanter.stats :as stats]))
+            [incanter.stats :as stats]
+            [chartit.config :as config]))
 
 (def endpoint "https://api.github.com/graphql")
 (def queries (graphql/parse-or-throw (io/resource "github.graphql")))
@@ -159,7 +160,7 @@
   (util/buckets2rows
     (util/bucket-by :submittedAt count reviews)))
 
-;; TODO: complexts field with stat, and should create rolling average for each stat??
+;; TODO: complects field with stat, and should create rolling average for each stat??
 (defn bucket-review-times [reviews]
   (util/buckets2rows
     (let [scalar-fn (fn [reviews]
@@ -169,3 +170,31 @@
                             (:hoursToReview (calc-review-review-hours review))))
                         0.0))]
       (util/bucket-by :submittedAt scalar-fn reviews))))
+
+(def group-groups (config/get-config [:github-group-groups]))
+
+(def login-group-pairs
+  (for [[login groups] (config/get-config [:github-login-groups])
+        group groups
+        login-group (cons [login group]
+                          (for [[g1 gs] group-groups
+                                g2 gs
+                                :let [_ (when (= group "platform")
+                                          (prn g2))]
+                                :when (= group g2)]
+                            [login g1]))]
+    login-group))
+
+(def login-groups
+  (reduce
+    (fn [acc [login group]]
+      (update acc login (fnil conj #{}) group))
+    {}
+    login-group-pairs))
+
+(def group-logins
+  (reduce
+    (fn [acc [login group]]
+      (update acc group (fnil conj #{}) login))
+    {}
+    login-group-pairs))

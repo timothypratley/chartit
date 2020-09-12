@@ -7,14 +7,15 @@
             [chartit.local-file :as local-file]
             [chartit.util :as util]
             [clojure.string :as str]
-            [chartit.config :as config]))
+            [chartit.config :as config]
+            [meander.epsilon :as m]
+            [clojure.set :as set]))
 
 ;; TODO: start-date
 ;; TODO: plot start-dates
 ;; TODO: list members
 
-(def github-login-groups
-  (config/get-config [:github-login-groups]))
+
 
 (defn upload-pull-requests [spreadsheet-title pull-requests]
   (let [spreadsheet-id (gsheet/ensure-spreadsheet spreadsheet-title)]
@@ -63,19 +64,19 @@
                  github/reviews-as-rows
                  github/bucket-review-times)
   (create-sheets "Clubhouse pull requests by group"
-                 (util/group-by-groups #(-> % :author :login github-login-groups)
+                 (util/group-by-groups #(-> % :author :login github/login-groups)
                                        pull-requests)
                  "pull requests merged"
                  github/pull-requests-as-rows
                  github/bucket-pull-requests)
   (create-sheets "Clubhouse pull request reviews by group"
-                 (util/group-by-groups #(-> % :author :login github-login-groups)
+                 (util/group-by-groups #(-> % :author :login github/login-groups)
                                        (github/reviews pull-requests))
                  "reviews submitted"
                  github/reviews-as-rows
                  github/bucket-reviews)
   (create-sheets "Clubhouse pull request review time by group"
-                 (util/group-by-groups #(-> % :author :login github-login-groups)
+                 (util/group-by-groups #(-> % :author :login github/login-groups)
                                        (github/reviews pull-requests))
                  "mean hours to review"
                  github/reviews-as-rows
