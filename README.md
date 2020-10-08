@@ -19,6 +19,7 @@ Copy `config-template.edn` to `config.edn` and update `config.edn` with tokens f
 * [Create a Clubhouse token](https://help.clubhouse.io/hc/en-us/articles/205701199-Clubhouse-API-Tokens)
 * [Create a Google Oauth2 App](https://support.google.com/googleapi/answer/6158849?hl=en&ref_topic=7013279)
 
+Requires Java and [Leiningen](https://leiningen.org/) to be installed.
 
 ## Running
 

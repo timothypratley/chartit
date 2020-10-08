@@ -68,16 +68,52 @@
   (when (seq entities)
     (let [min-date (apply t/min (for [entity entities]
                                   (time-fn entity)))
-          buckets  (reverse (periodic-seq (t/java-date (end-of-week)) (t/weeks 1) min-date))]
+          buckets (reverse (periodic-seq (t/java-date (end-of-week)) (t/weeks 1) min-date))]
       (loop [[bucket & more-buckets] buckets
              acc ()
-             es  (sort-by time-fn entities)]
+             es (sort-by time-fn entities)]
         (let [boundary-fn #(not (t/after? (t/instant (time-fn %)) bucket))
               [bucketed-entities more-entities] (split-with boundary-fn es)
-              acc         (cons [bucket (aggregate-fn bucketed-entities)] acc)]
+              acc (cons [bucket (aggregate-fn bucketed-entities)] acc)]
           (if more-buckets
             (recur more-buckets acc more-entities)
             (reverse acc)))))))
+
+(defn calc-tenure [pull-requests]
+  (reduce
+    (fn [acc {:keys           [mergedAt]
+              {:keys [login]} :author}]
+      (if (contains? acc login)
+        (assoc-in acc [login :last-mergedAt] mergedAt)
+        (assoc acc login {:first-mergedAt mergedAt
+                          :last-mergedAt  mergedAt})))
+    {}
+    (sort-by :mergedAt pull-requests)))
+
+(defn bucket-tenure [pull-requests]
+  (let [tenure (calc-tenure pull-requests)
+        min-date (apply t/min (for [entity pull-requests]
+                                (:mergedAt entity)))
+        ts (reverse (periodic-seq (t/java-date (end-of-week)) (t/weeks 1) min-date))]
+    (loop [[t & more-ts] ts
+           acc ()
+           es (sort-by :mergedAt pull-requests)]
+      (let [boundary-fn #(not (t/after? (t/instant (:mergedAt %)) t))
+            [bucketed-entities more-entities] (split-with boundary-fn es)
+            current (filter (fn [[login {:keys [first-mergedAt last-mergedAt]}]]
+                              (and
+                                (t/before? (t/instant first-mergedAt) t)
+                                (t/before? (t/minus t (t/weeks 1)) (t/instant last-mergedAt))))
+                            tenure)
+            pr-count (count bucketed-entities)
+            person-count (count current)
+            pr-per-person (when (pos? person-count)
+                            (/ pr-count person-count))
+            acc (cons [t pr-per-person]
+                      acc)]
+        (if more-ts
+          (recur more-ts acc more-entities)
+          (reverse acc))))))
 
 (defn stats-by
   "Given a `scalar-fn` that looks up a numeric value in an entity,

@@ -156,6 +156,10 @@
   (util/buckets2rows
     (util/bucket-by :mergedAt count pull-requests)))
 
+(defn bucket-pull-requests-with-tenure [pull-requests]
+  (util/buckets2rows
+    (util/bucket-tenure pull-requests)))
+
 (defn bucket-reviews [reviews]
   (util/buckets2rows
     (util/bucket-by :submittedAt count reviews)))
@@ -179,8 +183,6 @@
         login-group (cons [login group]
                           (for [[g1 gs] group-groups
                                 g2 gs
-                                :let [_ (when (= group "platform")
-                                          (prn g2))]
                                 :when (= group g2)]
                             [login g1]))]
     login-group))

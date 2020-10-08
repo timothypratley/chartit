@@ -44,7 +44,12 @@
                               (bucket-fn vs)))))
 
 (defn upload-github-gsheet [pull-requests]
-  (upload-pull-requests "Clubhouse all pull requests" pull-requests)
+  (create-sheets "Clubhouse all pull requests"
+                 {"all" pull-requests}
+                 "pull requests merged"
+                 github/pull-requests-as-rows
+                 github/bucket-pull-requests-with-tenure)
+
   (create-sheets "Clubhouse pull requests by person"
                  (group-by #(-> % :author :login)
                            pull-requests)
@@ -91,7 +96,7 @@
         pull-requests (github/dedupe-updated-pull-requests pull-requests)
         pull-requests (sort-by :mergedAt pull-requests)]
     (println "Github: Fetched" (count new-pull-requests) "new pull requests, now have" (count pull-requests))
-    (when true #_(seq new-pull-requests)
+    (when (seq new-pull-requests)
       (local-file/save "pull_requests" pull-requests)
       (upload-github-gsheet pull-requests))))
 
