@@ -1,4 +1,5 @@
 (ns chartit.exec
+  (:gen-class)
   (:require [chartit.clubhouse :as clubhouse]
             [chartit.github :as github]
             [chartit.graphql :as graphql]
@@ -6,16 +7,10 @@
             [chartit.justworks :as justworks]
             [chartit.local-file :as local-file]
             [chartit.util :as util]
-            [clojure.string :as str]
-            [chartit.config :as config]
-            [meander.epsilon :as m]
-            [clojure.set :as set]))
+            [clojure.string :as str]))
 
-;; TODO: start-date
 ;; TODO: plot start-dates
 ;; TODO: list members
-
-
 
 (defn upload-pull-requests [spreadsheet-title pull-requests]
   (let [spreadsheet-id (gsheet/ensure-spreadsheet spreadsheet-title)]
@@ -103,9 +98,9 @@
 ;; TODO: percentiles? % in target range?
 
 (def clubhouse-data-sets
-  [["features" clubhouse/features]
-   ["bugs" clubhouse/bugs]
-   ["chores" clubhouse/chores]])
+  [["features" clubhouse/*features]
+   ["bugs" clubhouse/*bugs]
+   ["chores" clubhouse/*chores]])
 
 (def clubhouse-statistics
   [["lead time" clubhouse/story-lead-days]
@@ -115,13 +110,13 @@
   (doseq [[data-label stories] clubhouse-data-sets
           [stat-label scalar-fn] clubhouse-statistics
           :let [title (str stat-label " weekly " data-label)
-                stats (clubhouse/bucket-stats stories scalar-fn)]]
+                stats (clubhouse/bucket-stats @stories scalar-fn)]]
     (gsheet/set-sheet-data spreadsheet-id title stats)))
 
 #_(clubhouse/bucket-stats clubhouse/features clubhouse/story-lead-days)
 
 (defn clubhouse-open-closed-gsheet [spreadsheet-id]
-  (let [open-closed (clubhouse/open-vs-closed (clubhouse/remove-archived-incomplete clubhouse/all-stories))]
+  (let [open-closed (clubhouse/open-vs-closed (clubhouse/remove-archived-incomplete @clubhouse/*all-stories))]
     (gsheet/set-sheet-data spreadsheet-id "all_stories" open-closed)))
 
 ;; TODO: split by story type group and person
@@ -139,7 +134,7 @@
 (defn clubhouse-gsheet []
   (println "Clubhouse: Fetching")
   (clubhouse/fetch-all)
-  (println "Clubhouse: Fetched" (count clubhouse/all-stories) "stories")
+  (println "Clubhouse: Fetched" (count @clubhouse/*all-stories) "stories")
   (upload-clubhouse-gsheet))
 
 ;; TODO: better user management

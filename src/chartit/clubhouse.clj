@@ -27,20 +27,18 @@
        (#(json/parse-string % true))
        (map #(util/parse-dates % date-fields))))
 
-(json/parse-string (slurp "secret.json") true)
-
 (defn fetch-all []
   (let [{:keys [out err]} (sh/sh "./exporter.sh")]
     (println out)
     (println err)))
 
-(def members (read-json "members"))
-(def members-by-id (util/index-by :id members))
+(def *members (delay (read-json "members")))
+(def *members-by-id (delay (util/index-by :id @*members)))
 
-(def features (read-json "stories.features"))
-(def bugs (read-json "stories.bugs"))
-(def chores (read-json "stories.chores"))
-(def all-stories (concat features bugs chores))
+(def *features (delay (read-json "stories.features")))
+(def *bugs (delay (read-json "stories.bugs")))
+(def *chores (delay (read-json "stories.chores")))
+(def *all-stories (delay (concat @*features @*bugs @*chores)))
 
 (def remove-archived-incomplete
   (s/rewrite
@@ -54,23 +52,23 @@
   (cons ["completed_at" "owned_by" "type" "title" "url"]
         (for [{:keys [app_url story_type name completed_at owner_ids]} stories
               owner_id owner_ids
-              :let [member (-> owner_id members-by-id :profile :mention_name)]]
+              :let [member (-> owner_id @*members-by-id :profile :mention_name)]]
           [(util/est-date completed_at) member story_type name app_url])))
 
 (defn requested-stories [stories]
   (cons ["created_at" "requested_by" "type" "title" "url"]
         (for [{:keys [app_url story_type name requested_by_id created_at]} stories
-              :let [member (-> requested_by_id members-by-id :profile :mention_name)]]
+              :let [member (-> requested_by_id @*members-by-id :profile :mention_name)]]
           [(util/est-date created_at) member story_type name app_url])))
 
 (defn all-completed-stories []
-  (->> all-stories
+  (->> @*all-stories
        (filter :completed_at)
        (sort-by :completed_at)
        (completed-stories)))
 
 (defn all-requested-stories []
-  (->> all-stories
+  (->> @*all-stories
        (filter :requested_by_id)
        (sort-by :created_at)
        (requested-stories)))

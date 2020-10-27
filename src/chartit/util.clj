@@ -159,7 +159,7 @@
                          (map #(/ (double (reduce + %)) n)
                               (partition n 1 (map second rows))))))
 
-(defn round [x]
+(defn round [^double x]
   (/ (Math/round (* 100.0 x)) 100.0))
 
 (defn hours-between [a b]

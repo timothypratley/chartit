@@ -4,15 +4,13 @@
             [chartit.util :as util]
             [clj-http.client :as http]
             [clojure.java.io :as io]
-            [java-time :as t]
             [clojure.string :as str]
-            [incanter.stats :as stats]
-            [chartit.config :as config]))
+            [java-time :as t]
+            [incanter.stats :as stats]))
 
 (def endpoint "https://api.github.com/graphql")
 (def queries (graphql/parse-or-throw (io/resource "github.graphql")))
 (def date-fields #{:createdAt :updatedAt :mergedAt :submittedAt})
-(def bot-logins #{"dependabot" "dependabot-preview" "ClubhouseBot"})
 
 (defn config [k]
   (c/get-config [:providers :github k]))
@@ -41,8 +39,8 @@
     (-> (fetch :search-pull-request
                {:query (str "org:" org
                             " is:pr is:merged sort:updated-asc"
-                            (str/join (for [bot bot-logins]
-                                        (str " -author:" bot)))
+                            (str/join (for [login (config :exclude-logins)]
+                                        (str " -author:" login)))
                             (when after
                               (str " updated:>" after-str)))}
                access-token)
@@ -151,7 +149,6 @@
 (defn reviews-as-rows [reviews]
   (graphql/nodes2rows (map groom-review reviews)))
 
-;; TODO: divide by group size
 (defn bucket-pull-requests [pull-requests]
   (util/buckets2rows
     (util/bucket-by :mergedAt count pull-requests)))
@@ -175,10 +172,10 @@
                         0.0))]
       (util/bucket-by :submittedAt scalar-fn reviews))))
 
-(def group-groups (config/get-config [:github-group-groups]))
+(def group-groups (config :group-groups))
 
 (def login-group-pairs
-  (for [[login groups] (config/get-config [:github-login-groups])
+  (for [[login groups] (config [:login-groups])
         group groups
         login-group (cons [login group]
                           (for [[g1 gs] group-groups
