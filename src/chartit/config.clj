@@ -7,7 +7,7 @@
              (let [c (io/file "config.edn")]
                (when (.exists c)
                  (edn/read-string (slurp c))))
-             (throw (ex-info "Missing configuration, supply in environment CHARIT_CONFIG or config.edn" {})))))
+             (throw (ex-info "Missing configuration, supply in environment CHARTIT_CONFIG or config.edn" {})))))
 
 (defn get-config [ks]
   (get-in @*config ks))
