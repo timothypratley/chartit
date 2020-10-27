@@ -1,12 +1,12 @@
 (ns chartit.github
   (:require [chartit.config :as c]
             [chartit.graphql :as graphql]
+            [chartit.stats :as stats]
             [chartit.util :as util]
             [clj-http.client :as http]
             [clojure.java.io :as io]
             [clojure.string :as str]
-            [java-time :as t]
-            [incanter.stats :as stats]))
+            [java-time :as t]))
 
 (def endpoint "https://api.github.com/graphql")
 (def queries (graphql/parse-or-throw (io/resource "github.graphql")))

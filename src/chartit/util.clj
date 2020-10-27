@@ -1,7 +1,7 @@
 (ns chartit.util
-  (:require [clojure.instant :as instant]
-            [java-time :as t]
-            [incanter.stats :as stats]))
+  (:require [chartit.stats :as stats]
+            [clojure.instant :as instant]
+            [java-time :as t]))
 
 (defn index-by
   "Returns a map of the elements of coll keyed by the result of f on each
@@ -127,7 +127,7 @@
      :max                (apply max xs)
      :mean               (stats/mean xs)
      :median             (stats/median xs)
-     :standard-deviation (stats/sd xs)}))
+     :standard-deviation (stats/standard-deviation xs)}))
 
 (defn buckets2rows [bucketed]
   (for [[bucket v] bucketed]

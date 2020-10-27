@@ -1,5 +1,6 @@
 (ns chartit.config
-  (:require [clojure.edn :as edn]))
+  (:require [clojure.edn :as edn]
+            [clojure.java.io :as io]))
 
 (def *config
   (delay (or (edn/read-string (System/getenv "CHARTIT_CONFIG"))
