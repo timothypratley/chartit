@@ -31,7 +31,11 @@ To pull down the latest data and upload to sheets:
 
 ## Deployment
 
-Requires Java.
+To create an uberjar:
+
+    lein uberjar
+
+Running on a server requires Java:
 
     java -jar target/chartit-0.1.0-SNAPSHOT.jar
 
