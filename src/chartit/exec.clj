@@ -163,6 +163,7 @@
 ;; TODO: KPI/summary
 
 (defn -main [& args]
+  (gsheet/init!)
   (println "github-gsheet")
   (github-gsheet)
   (println "clubhouse-gsheet")

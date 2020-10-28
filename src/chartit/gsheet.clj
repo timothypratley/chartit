@@ -4,9 +4,9 @@
             [happygapi.drive.files :as g.files]
             [happygapi.sheets.spreadsheets :as g.sheets]))
 
-(def secret (c/get-config [:providers :google :secret]))
-(def scopes (c/get-config [:providers :google :scopes]))
-(credentials/init! secret scopes)
+(defn init! []
+  (credentials/init! (c/get-config [:providers :google :secret])
+                     (c/get-config [:providers :google :scopes])))
 
 (defn nap
   "Sleep a bit to avoid rate limiting"

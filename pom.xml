@@ -18,7 +18,7 @@
     <url>https://github.com/timothypratley/chartit</url>
     <connection>scm:git:git://github.com/timothypratley/chartit.git</connection>
     <developerConnection>scm:git:ssh://git@github.com/timothypratley/chartit.git</developerConnection>
-    <tag>1d2d35ca3b5c3b9b116f80fd220be350e3de839e</tag>
+    <tag>07aa80fc4c21cd980c131ff2f1388966d9698e57</tag>
   </scm>
   <build>
     <sourceDirectory>src</sourceDirectory>
@@ -91,7 +91,7 @@
     <dependency>
       <groupId>happygapi</groupId>
       <artifactId>happygapi</artifactId>
-      <version>0.4.2</version>
+      <version>0.4.4</version>
     </dependency>
     <dependency>
       <groupId>meander</groupId>
