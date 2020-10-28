@@ -10,7 +10,7 @@
                  [fipp "0.6.23"]
                  [floatingpointio/graphql-builder "0.1.14"]
                  [instaparse "1.4.10"]
-                 [happygapi "0.4.2"]
+                 [happygapi "0.4.4"]
                  [meander/epsilon "0.0.512"]
                  [clj-http "3.10.3"]
                  [cheshire "5.10.0"]

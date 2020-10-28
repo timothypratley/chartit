@@ -27,12 +27,14 @@
                    (map key))]
     modes))
 
-(defn standard-deviation [coll]
+(defn standard-deviation ^double [coll]
   (let [avg (mean coll)
         squares (for [x coll]
                   (let [x-avg (- x avg)]
                     (* x-avg x-avg)))
         total (count coll)]
-    (-> (/ (apply + squares)
-           (- total 1))
-        (Math/sqrt))))
+    (if (<= total 1)
+      0.0
+      (-> (/ (apply + squares)
+             (- total 1))
+          (Math/sqrt)))))

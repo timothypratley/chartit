@@ -11,6 +11,7 @@
                                             "https://www.googleapis.com/auth/drive"
                                             "<UPDATE SCOPES>"]
                          :secret           {:project_id                  "<UPDATE>",
+                                            :private_key                 "<UPDATE>",
                                             :client_id                   "<UPDATE>",
                                             :client_secret               "<UPDATE>",
                                             :auth_uri                    "https://accounts.google.com/o/oauth2/auth",

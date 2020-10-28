@@ -39,6 +39,10 @@ Running on a server requires Java:
 
     java -jar target/chartit-0.1.0-SNAPSHOT.jar
 
+[Create a Service account](https://developers.google.com/identity/protocols/oauth2/service-account)
+and add the private_key and client_email to config.edn.
+This is for server to server communication where user interaction is not possible.
+The private_key and client_email will be used for authentication instead of user redirect.
 
 ## Development
 

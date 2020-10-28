@@ -1,5 +1,6 @@
-config.edn
-secret.json
+/config.edn
+/secret.json
+/service.json
 /tokens/
 /data/
 /resources/public/js/compiled/**
