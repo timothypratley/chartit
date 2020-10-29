@@ -9,13 +9,18 @@
             [meander.strategy.epsilon :as s]
             [meander.epsilon :as m]))
 
-(def endpoint (str "https://api.clubhouse.io/api/v3/stories/search?token="
-                   (config/get-config [:providers :clubhouse :access-token])))
+(defn config [k]
+  (config/get-config [:providers :clubhouse k]))
+
+(defn endpoint []
+  (str "https://api.clubhouse.io/api/v3/stories/search?token="
+       (config :access-token)))
+
 (def date-fields #{:created_at :started_at :completed_at :updated_at :moved_at})
 (def story-types #{"bug" "feature" "chore"})
 
 (defn fetch-stories []
-  (:body (http/post endpoint
+  (:body (http/post (endpoint)
                     {:body         {:story_type "bug"}
                      :content-type :json
                      :accept       :json
@@ -28,7 +33,9 @@
        (map #(util/parse-dates % date-fields))))
 
 (defn fetch-all []
-  (let [{:keys [out err]} (sh/sh "./exporter.sh")]
+  (let [{:keys [out err]} (sh/with-sh-env
+                            {:CLUBHOUSE_API_TOKEN (config :access-token)}
+                            (sh/sh "./exporter.sh"))]
     (println out)
     (println err)))
 
@@ -115,12 +122,15 @@
            in-progress #{}
            result      [["date" "open" "closed" "in-progress"]]]
       (if dates
-        (let [created?    (and next-created (t/before? (t/instant (:created_at next-created)) date))
+        (let [created?    (and (:created_at next-created)
+                               (t/before? (t/instant (:created_at next-created)) date))
               open        (conj open next-created)
-              started?    (and next-started (t/before? (t/instant (:started_at next-started)) date))
+              started?    (and (:started_at next-started)
+                               (t/before? (t/instant (:started_at next-started)) date))
               in-progress (conj in-progress next-started)
 
-              completed?  (and next-completed (t/before? (t/instant (:completed_at next-completed)) date))
+              completed?  (and (:completed_at next-completed)
+                               (t/before? (t/instant (:completed_at next-completed)) date))
               closed      (conj closed next-completed)
               open        (disj open next-completed)
               in-progress (disj in-progress next-completed)
