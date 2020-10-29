@@ -117,8 +117,11 @@
 #_(clubhouse/bucket-stats clubhouse/features clubhouse/story-lead-days)
 
 (defn clubhouse-open-closed-gsheet [spreadsheet-id]
-  (let [open-closed (clubhouse/open-vs-closed (clubhouse/remove-archived-incomplete @clubhouse/*all-stories))]
-    (gsheet/set-sheet-data spreadsheet-id "all_stories" open-closed)))
+  (try
+    (let [open-closed (clubhouse/open-vs-closed (clubhouse/remove-archived-incomplete @clubhouse/*all-stories))]
+      (gsheet/set-sheet-data spreadsheet-id "all_stories" open-closed))
+    (catch Exception ex
+      (.printStackTrace ex))))
 
 ;; TODO: split by story type group and person
 (defn upload-clubhouse-gsheet []
