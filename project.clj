@@ -15,7 +15,8 @@
                  [clj-http "3.10.3"]
                  [cheshire "5.10.0"]
                  [clojure.java-time "0.3.2"]
-                 [ring "1.8.2"]]
+                 [ring "1.8.2"]
+                 [listora/again "1.0.0"]]
 
   :source-paths ["src"]
   :profiles {:uberjar {:aot [chartit.exec]}})

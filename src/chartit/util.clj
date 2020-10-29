@@ -56,8 +56,9 @@
       (t/adjust (t/local-time 23 59 59))))
 
 (defn periodic-seq [start-date period end-date]
-  (take-while #(t/after? (t/instant %) (t/instant end-date))
-              (t/iterate t/minus (t/instant start-date) period)))
+  (when (and start-date end-date)
+    (take-while #(t/after? (t/instant %) (t/instant end-date))
+                (t/iterate t/minus (t/instant start-date) period))))
 
 (defn bucket-by
   "Given a `time-fn` which looks up a time from an entity,

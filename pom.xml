@@ -18,7 +18,7 @@
     <url>https://github.com/timothypratley/chartit</url>
     <connection>scm:git:git://github.com/timothypratley/chartit.git</connection>
     <developerConnection>scm:git:ssh://git@github.com/timothypratley/chartit.git</developerConnection>
-    <tag>372bdc2d7b37ac6039c80b9f477f982448340775</tag>
+    <tag>b65937ce301783992ab5dadf6189c793f191472a</tag>
   </scm>
   <build>
     <sourceDirectory>src</sourceDirectory>
@@ -117,6 +117,11 @@
       <groupId>ring</groupId>
       <artifactId>ring</artifactId>
       <version>1.8.2</version>
+    </dependency>
+    <dependency>
+      <groupId>listora</groupId>
+      <artifactId>again</artifactId>
+      <version>1.0.0</version>
     </dependency>
   </dependencies>
 </project>

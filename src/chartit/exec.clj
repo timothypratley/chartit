@@ -7,7 +7,9 @@
             [chartit.justworks :as justworks]
             [chartit.local-file :as local-file]
             [chartit.util :as util]
-            [clojure.string :as str]))
+            [clojure.string :as str]
+            [again.core :as again]
+            [happy.util :as hu]))
 
 ;; TODO: plot start-dates
 ;; TODO: list members
@@ -167,13 +169,17 @@
 ;; TODO: KPI/summary
 
 (defn -main [& args]
-  (gsheet/init!)
-  (println "github-gsheet")
-  (github-gsheet)
-  (println "clubhouse-gsheet")
-  (clubhouse-gsheet)
-  (println "users-gsheet")
-  (users-gsheet)
+  (let [get-response hu/get-response]
+    (with-redefs [hu/get-response (fn get-response-with-retries [& args]
+                                    (again/with-retries [2000 5000 10000 15000]
+                                                        (get-response)))]
+      (gsheet/init!)
+      (println "github-gsheet")
+      (github-gsheet)
+      (println "clubhouse-gsheet")
+      (clubhouse-gsheet)
+      (println "users-gsheet")
+      (users-gsheet)))
   :done)
 
 (comment

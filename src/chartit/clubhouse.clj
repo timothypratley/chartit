@@ -32,6 +32,7 @@
     (println out)
     (println err)))
 
+;; TODO: just replace with functions
 (def *members (delay (read-json "members")))
 (def *members-by-id (delay (util/index-by :id @*members)))
 
