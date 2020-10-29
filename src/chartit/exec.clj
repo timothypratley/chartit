@@ -12,6 +12,7 @@
 ;; TODO: plot start-dates
 ;; TODO: list members
 
+;; TODO: unused...
 (defn upload-pull-requests [spreadsheet-title pull-requests]
   (let [spreadsheet-id (gsheet/ensure-spreadsheet spreadsheet-title)]
     (gsheet/set-sheet-data spreadsheet-id "pull_requests"

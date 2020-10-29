@@ -6,7 +6,8 @@
                                         "anotherlogin" #{"group3"}}
                          :group-groups {"everyone" #{"group1" "group2" "group3"}}}
              :clubhouse {:access-token "<INSERT TOKEN HERE>"}
-             :google    {:tokens-directory "tokens"
+             :google    {:spreadsheets {"Spreadsheet title" "spreadsheet-id"}
+                         :tokens-directory "tokens"
                          :scopes           ["https://www.googleapis.com/auth/spreadsheets"
                                             "https://www.googleapis.com/auth/drive"
                                             "<UPDATE SCOPES>"]

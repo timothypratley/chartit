@@ -4,9 +4,11 @@
             [happygapi.drive.files :as g.files]
             [happygapi.sheets.spreadsheets :as g.sheets]))
 
+(defn config [k]
+  (c/get-config [:providers :google k]))
+
 (defn init! []
-  (credentials/init! (c/get-config [:providers :google :secret])
-                     (c/get-config [:providers :google :scopes])))
+  (credentials/init! (config :secret) (config :scopes)))
 
 (defn nap
   "Sleep a bit to avoid rate limiting"
@@ -82,7 +84,8 @@
       (:id)))
 
 (defn ensure-spreadsheet [title]
-  (or (find-spreadsheet title)
+  (or (get (config :spreadsheets) title)
+      (find-spreadsheet title)
       (create-spreadsheet title)))
 
 (defn rolling-averages-chart-spec [sheet-id title end-row-index]
