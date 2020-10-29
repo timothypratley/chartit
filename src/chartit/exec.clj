@@ -172,7 +172,7 @@
   (let [get-response hu/get-response]
     (with-redefs [hu/get-response (fn get-response-with-retries [& args]
                                     (again/with-retries [2000 5000 10000 15000]
-                                                        (get-response)))]
+                                                        (apply get-response args)))]
       (gsheet/init!)
       (println "github-gsheet")
       (github-gsheet)
