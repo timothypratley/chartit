@@ -172,28 +172,35 @@
                         0.0))]
       (util/bucket-by :submittedAt scalar-fn reviews))))
 
-(def group-groups (config :group-groups))
+(def *login-group-pairs
+  (delay
+    (for [[login groups] (config :login-groups)
+          group groups
+          login-group (cons [login group]
+                            (for [[g1 gs] (config :group-groups)
+                                  g2 gs
+                                  :when (= group g2)]
+                              [login g1]))]
+      login-group)))
 
-(def login-group-pairs
-  (for [[login groups] (config [:login-groups])
-        group groups
-        login-group (cons [login group]
-                          (for [[g1 gs] group-groups
-                                g2 gs
-                                :when (= group g2)]
-                            [login g1]))]
-    login-group))
+(def *login-groups
+  (delay
+    (reduce
+      (fn [acc [login group]]
+        (update acc login (fnil conj #{}) group))
+      {}
+      @*login-group-pairs)))
 
-(def login-groups
-  (reduce
-    (fn [acc [login group]]
-      (update acc login (fnil conj #{}) group))
-    {}
-    login-group-pairs))
+(defn login-groups [login]
+  (get @*login-groups login))
 
-(def group-logins
-  (reduce
-    (fn [acc [login group]]
-      (update acc group (fnil conj #{}) login))
-    {}
-    login-group-pairs))
+(def *group-logins
+  (delay
+    (reduce
+      (fn [acc [login group]]
+        (update acc group (fnil conj #{}) login))
+      {}
+      @*login-group-pairs)))
+
+(defn group-logins [group]
+  (get @*group-logins group))

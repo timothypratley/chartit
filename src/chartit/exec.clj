@@ -152,18 +152,19 @@
                            (graphql/nodes2rows (github/users)))))
 
 (comment
- (def g (github/users))
- (def j (justworks/company-directory))
- (def g2 (util/index-by :name g))
- (defn fname [s]
-   (str/join " " (reverse (str/split s #", "))))
- (for [{:keys [name] :as e} j]
-   (merge (get g2 (fname name)) e))
- (def j2 (util/index-by (comp fname :name) j))
- (count
-  (for [{:keys [name] :as gg} g
-        :when (not (j2 name))]
-    gg)))
+  (def pull-requests (local-file/read-file "pull_requests"))
+  (def g (github/users))
+  (def j (justworks/company-directory))
+  (def g2 (util/index-by :name g))
+  (defn fname [s]
+    (str/join " " (reverse (str/split s #", "))))
+  (for [{:keys [name] :as e} j]
+    (merge (get g2 (fname name)) e))
+  (def j2 (util/index-by (comp fname :name) j))
+  (count
+    (for [{:keys [name] :as gg} g
+          :when (not (j2 name))]
+      gg)))
 
 
 ;; TODO: KPI/summary

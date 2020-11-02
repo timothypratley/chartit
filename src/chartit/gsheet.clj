@@ -85,8 +85,10 @@
 
 (defn ensure-spreadsheet [title]
   (or (get (config :spreadsheets) title)
-      (find-spreadsheet title)
-      (create-spreadsheet title)))
+      (do (println "Looking up spreadsheet:" title)
+          (find-spreadsheet title))
+      (do (println "Creating spreadsheet:" title)
+          (create-spreadsheet title))))
 
 (defn rolling-averages-chart-spec [sheet-id title end-row-index]
   {"title"                   title
