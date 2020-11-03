@@ -121,7 +121,7 @@
 
 ;; TODO: split by story type group and person
 (defn upload-clubhouse-gsheet []
-  (let [spreadsheetId (gsheet/ensure-spreadsheet "Clubhouse stories")]
+  (let [spreadsheetId (gsheet/ensure-spreadsheet :stories)]
     (gsheet/set-sheet-data spreadsheetId "stories_completed"
                            (clubhouse/all-completed-stories))
     (gsheet/set-sheet-data spreadsheetId "stories_requested"
@@ -139,7 +139,7 @@
 
 ;; TODO: better user management
 (defn users-gsheet []
-  (let [spreadsheetId (gsheet/ensure-spreadsheet "Clubhouse users")]
+  (let [spreadsheetId (gsheet/ensure-spreadsheet :users)]
     (gsheet/set-sheet-data spreadsheetId "Justworks"
                            (graphql/nodes2rows (justworks/company-directory)))
     (gsheet/set-sheet-data spreadsheetId "Github"

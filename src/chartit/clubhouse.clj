@@ -42,6 +42,8 @@
 ;; TODO: just replace with functions
 (def *members (delay (read-json "members")))
 (def *members-by-id (delay (util/index-by :id @*members)))
+(defn members-by-id [x]
+  (get @*members-by-id x))
 
 (def *features (delay (read-json "stories.features")))
 (def *bugs (delay (read-json "stories.bugs")))
@@ -60,13 +62,13 @@
   (cons ["completed_at" "owned_by" "type" "title" "url"]
         (for [{:keys [app_url story_type name completed_at owner_ids]} stories
               owner_id owner_ids
-              :let [member (-> owner_id @*members-by-id :profile :mention_name)]]
+              :let [member (-> owner_id members-by-id :profile :mention_name)]]
           [(util/est-date completed_at) member story_type name app_url])))
 
 (defn requested-stories [stories]
   (cons ["created_at" "requested_by" "type" "title" "url"]
         (for [{:keys [app_url story_type name requested_by_id created_at]} stories
-              :let [member (-> requested_by_id @*members-by-id :profile :mention_name)]]
+              :let [member (-> requested_by_id members-by-id :profile :mention_name)]]
           [(util/est-date created_at) member story_type name app_url])))
 
 (defn all-completed-stories []
