@@ -6,13 +6,29 @@
                                         "anotherlogin" #{"group3"}}
                          :group-groups {"everyone" #{"group1" "group2" "group3"}}}
              :clubhouse {:access-token "<INSERT TOKEN HERE>"}
-             :google    {:spreadsheets {"Spreadsheet title" "spreadsheet-id"}
+             :google    {:prefix "MyOrg"
+                         ;; Optional: you can specify the spreadsheet-id if title is insufficient to identify the spreadsheet
+                         :spreadsheets {:stories                            {:id "spreadsheet-id"}
+                                        :users                              {:id "spreadsheet-id"}
+                                        :pull-request-review-time-by-person {:id "spreadsheet-id"}
+                                        :pull-request-reviews-by-person     {:id "spreadsheet-id"}
+                                        :pull-requests-by-person            {:id "spreadsheet-id"}
+                                        :pull-request-reviews-by-group      {:id "spreadsheet-id"}
+                                        :all-pull-requests                  {:id "spreadsheet-id"}
+                                        :pull-request-review-time-by-group  {:id "spreadsheet-id"}
+                                        :pull-requests-by-group             {:id "spreadsheet-id"}
+                                        :pull-requests-by-repo              {:id "spreadsheet-id"}
+                                        :pull-request-review-time-by-repo   {:id "spreadsheet-id"}}
                          :tokens-directory "tokens"
                          :scopes           ["https://www.googleapis.com/auth/spreadsheets"
                                             "https://www.googleapis.com/auth/drive"
                                             "<UPDATE SCOPES>"]
-                         :secret           {:project_id                  "<UPDATE>",
+                         :secret           { ;; If you use a service account
+                                            :client_email                "<UPDATE>"
                                             :private_key                 "<UPDATE>",
+
+                                            ;; If prompting the user to log in
+                                            :project_id                  "<UPDATE>",
                                             :client_id                   "<UPDATE>",
                                             :client_secret               "<UPDATE>",
                                             :auth_uri                    "https://accounts.google.com/o/oauth2/auth",

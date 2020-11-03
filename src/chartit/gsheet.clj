@@ -1,8 +1,10 @@
 (ns chartit.gsheet
   (:require [chartit.config :as c]
+            [chartit.util :as util]
             [happy.oauth2-credentials :as credentials]
             [happygapi.drive.files :as g.files]
-            [happygapi.sheets.spreadsheets :as g.sheets]))
+            [happygapi.sheets.spreadsheets :as g.sheets]
+            [clojure.string :as str]))
 
 (defn config [k]
   (c/get-config [:providers :google k]))
@@ -15,25 +17,23 @@
   []
   (Thread/sleep 1000))
 
-(defn retry
-  [retries f & args]
-  (let [res (try {:value (apply f args)}
-                 (catch Exception e
-                   (println "Retrying...")
-                   (if (zero? retries)
-                     (throw e)
-                     {:exception e})))]
-    (if (:exception res)
-      (recur (dec retries) f args)
-      (:value res))))
+(defn delete-all-sheets [spreadsheet-id]
+  (let [sheet-ids (->> (g.sheets/get$ (credentials/auth!)
+                                      {:spreadsheetId spreadsheet-id})
+                       (:sheets)
+                       (map (comp :sheetId :properties)))]
+    (g.sheets/batchUpdate$ (credentials/auth!)
+                           {:spreadsheetId spreadsheet-id}
+                           ;; Leaves the first sheet alone as you cannot delete all sheets in a spreadsheet
+                           {:requests (for [sheet-id (rest sheet-ids)]
+                                        {:deleteSheet {:sheetId sheet-id}})})))
 
 (defn batch-update [spreadsheet-id range values]
-  (retry 3 (fn []
-             (g.sheets/values-batchUpdate$ (credentials/auth!)
-                                           {:spreadsheetId spreadsheet-id}
-                                           {"valueInputOption" "USER_ENTERED"
-                                            "data"             [{"range"  range
-                                                                 "values" values}]}))))
+  (g.sheets/values-batchUpdate$ (credentials/auth!)
+                                {:spreadsheetId spreadsheet-id}
+                                {"valueInputOption" "USER_ENTERED"
+                                 "data"             [{"range"  range
+                                                      "values" values}]}))
 
 (defn set-data [spreadsheet-id range values]
   (nap)
@@ -84,8 +84,7 @@
       (:id)))
 
 (defn ensure-spreadsheet [title]
-  (or (get (config :spreadsheets) title)
-      (do (println "Looking up spreadsheet:" title)
+  (or (do (println "Looking up spreadsheet:" title)
           (find-spreadsheet title))
       (do (println "Creating spreadsheet:" title)
           (create-spreadsheet title))))
@@ -155,3 +154,28 @@
 
 (defn create-velocity-chart [spreadsheet-id sheet-id chart-id title number-of-rows]
   (create-chart spreadsheet-id chart-id (pull-request-velocity-chart sheet-id title number-of-rows)))
+
+;; TODO: could cache the data, compare, and only upload new rows
+(defn upload-sheet-and-chart [spreadsheet-id title metric rows buckets]
+  (set-sheet-data spreadsheet-id title rows)
+  (let [{{:keys [sheetId]} :properties, [{:keys [chartId]}] :charts}
+        (ensure-sheet spreadsheet-id (str title "_weekly"))]
+    (set-data spreadsheet-id (str title "_weekly")
+              (cons ["week" metric "4 week average" "quarterly average" "6 month average"]
+                    (-> buckets
+                        (util/with-rolling 4)
+                        (util/with-rolling 13)
+                        (util/with-rolling 26))))
+    (create-velocity-chart spreadsheet-id sheetId chartId title (count rows))))
+
+(defn create-sheets [spreadsheet-key m metric row-fn bucket-fn]
+  (let [spreadsheet-id (or (get-in (config :spreadsheets) [spreadsheet-key :id])
+                           (ensure-spreadsheet
+                             (str (when-let [p (config :prefix)] (str p " "))
+                                  (str/replace (name spreadsheet-key) "-" " "))))]
+    (doseq [[k vs] (sort-by #(str/capitalize (key %)) m)]
+      (upload-sheet-and-chart spreadsheet-id
+                              k
+                              metric
+                              (row-fn vs)
+                              (bucket-fn vs)))))

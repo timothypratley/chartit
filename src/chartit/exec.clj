@@ -14,76 +14,70 @@
 ;; TODO: plot start-dates
 ;; TODO: list members
 
-;; TODO: unused...
+;; Unused
 (defn upload-pull-requests [spreadsheet-title pull-requests]
   (let [spreadsheet-id (gsheet/ensure-spreadsheet spreadsheet-title)]
     (gsheet/set-sheet-data spreadsheet-id "pull_requests"
                            (github/pull-requests-as-rows pull-requests))))
 
-(defn upload-sheet-and-chart [spreadsheet-id title metric rows buckets]
-  (gsheet/set-sheet-data spreadsheet-id title rows)
-  (let [{{:keys [sheetId]} :properties, [{:keys [chartId]}] :charts}
-        (gsheet/ensure-sheet spreadsheet-id (str title "_weekly"))]
-    (gsheet/set-data spreadsheet-id (str title "_weekly")
-                     (cons ["week" metric "4 week average" "quarterly average" "6 month average"]
-                           (-> buckets
-                               (util/with-rolling 4)
-                               (util/with-rolling 13)
-                               (util/with-rolling 26))))
-    (gsheet/create-velocity-chart spreadsheet-id sheetId chartId title (count rows))))
-
-(defn create-sheets [spreadsheet-title m metric row-fn bucket-fn]
-  (let [spreadsheet-id (gsheet/ensure-spreadsheet spreadsheet-title)]
-    (doseq [[k vs] (sort-by #(str/capitalize (key %)) m)]
-      (upload-sheet-and-chart spreadsheet-id
-                              k
-                              metric
-                              (row-fn vs)
-                              (bucket-fn vs)))))
-
 (defn upload-github-gsheet [pull-requests]
-  (create-sheets "Clubhouse all pull requests"
-                 {"all" pull-requests}
-                 "pull requests merged"
-                 github/pull-requests-as-rows
-                 github/bucket-pull-requests-with-tenure)
-
-  (create-sheets "Clubhouse pull requests by person"
-                 (group-by #(-> % :author :login)
-                           pull-requests)
-                 "pull requests merged"
-                 github/pull-requests-as-rows
-                 github/bucket-pull-requests)
-  (create-sheets "Clubhouse pull request reviews by person"
-                 (group-by #(-> % :author :login)
-                           (github/reviews pull-requests))
-                 "reviews submitted"
-                 github/reviews-as-rows
-                 github/bucket-reviews)
-  (create-sheets "Clubhouse pull request review time by person"
-                 (group-by #(-> % :author :login)
-                           (github/reviews pull-requests))
-                 "mean hours to review"
-                 github/reviews-as-rows
-                 github/bucket-review-times)
-  (create-sheets "Clubhouse pull requests by group"
-                 (util/group-by-groups #(-> % :author :login github/login-groups)
-                                       pull-requests)
-                 "pull requests merged"
-                 github/pull-requests-as-rows
-                 github/bucket-pull-requests)
-  (create-sheets "Clubhouse pull request reviews by group"
-                 (util/group-by-groups #(-> % :author :login github/login-groups)
-                                       (github/reviews pull-requests))
-                 "reviews submitted"
-                 github/reviews-as-rows
-                 github/bucket-reviews)
-  (create-sheets "Clubhouse pull request review time by group"
-                 (util/group-by-groups #(-> % :author :login github/login-groups)
-                                       (github/reviews pull-requests))
-                 "mean hours to review"
-                 github/reviews-as-rows
-                 github/bucket-review-times))
+  (gsheet/create-sheets :all-pull-requests
+                        {"all" pull-requests}
+                        "pull requests merged"
+                        github/pull-requests-as-rows
+                        github/bucket-pull-requests-with-tenure)
+  (gsheet/create-sheets :pull-requests-by-person
+                        (group-by #(-> % :author :login)
+                                  pull-requests)
+                        "pull requests merged"
+                        github/pull-requests-as-rows
+                        github/bucket-pull-requests)
+  (gsheet/create-sheets :pull-request-reviews-by-person
+                        (group-by #(-> % :author :login)
+                                  (github/reviews pull-requests))
+                        "reviews submitted"
+                        github/reviews-as-rows
+                        github/bucket-reviews)
+  (gsheet/create-sheets :pull-request-review-time-by-person
+                        (group-by #(-> % :author :login)
+                                  (github/reviews pull-requests))
+                        "mean hours to review"
+                        github/reviews-as-rows
+                        github/bucket-review-times)
+  (gsheet/create-sheets :pull-requests-by-group
+                        (util/group-by-groups #(-> % :author :login (github/login-groups))
+                                              pull-requests)
+                        "pull requests merged"
+                        github/pull-requests-as-rows
+                        github/bucket-pull-requests)
+  (gsheet/create-sheets :pull-request-reviews-by-group
+                        (util/group-by-groups #(-> % :author :login (github/login-groups))
+                                              (github/reviews pull-requests))
+                        "reviews submitted"
+                        github/reviews-as-rows
+                        github/bucket-reviews)
+  (gsheet/create-sheets :pull-request-review-time-by-group
+                        (util/group-by-groups #(-> % :author :login (github/login-groups))
+                                              (github/reviews pull-requests))
+                        "mean hours to review"
+                        github/reviews-as-rows
+                        github/bucket-review-times)
+  (gsheet/create-sheets :pull-requests-by-repo
+                        (select-keys
+                          (group-by #(-> % :repository :name)
+                                    pull-requests)
+                          (map :name (github/active-repositories)))
+                        "pull requests merged"
+                        github/pull-requests-as-rows
+                        github/bucket-pull-requests)
+  (gsheet/create-sheets :pull-request-review-time-by-repo
+                        (select-keys
+                          (group-by #(-> % :pull-request :repository :name)
+                                    (github/reviews pull-requests))
+                          (map :name (github/active-repositories)))
+                        "mean hours to review"
+                        github/reviews-as-rows
+                        github/bucket-review-times))
 
 (defn github-gsheet []
   (println "Github: Fetching")
@@ -169,18 +163,23 @@
 
 ;; TODO: KPI/summary
 
+(defmacro with-get-response-retries
+  [& body]
+  `(let [get-response# @#'hu/get-response]
+     (with-redefs [hu/get-response (fn get-response-with-retries# [& args#]
+                                     (again/with-retries [2000 5000 10000 15000]
+                                                         (apply get-response# args#)))]
+       ~@body)))
+
 (defn -main [& args]
-  (let [get-response hu/get-response]
-    (with-redefs [hu/get-response (fn get-response-with-retries [& args]
-                                    (again/with-retries [2000 5000 10000 15000]
-                                                        (apply get-response args)))]
-      (gsheet/init!)
-      (println "github-gsheet")
-      (github-gsheet)
-      (println "clubhouse-gsheet")
-      (clubhouse-gsheet)
-      (println "users-gsheet")
-      (users-gsheet)))
+  (with-get-response-retries
+    (gsheet/init!)
+    (println "github-gsheet")
+    (github-gsheet)
+    (println "clubhouse-gsheet")
+    (clubhouse-gsheet)
+    (println "users-gsheet")
+    (users-gsheet))
   :done)
 
 (comment

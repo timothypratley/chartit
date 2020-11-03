@@ -24,11 +24,11 @@
   (let [q (get-in queries [:query k])
         {:keys [graphql unpack]} (q args)
         response (http/post endpoint
-                            {:headers {:authorization (str "Bearer " access-token)}
-                             :form-params graphql
+                            {:headers      {:authorization (str "Bearer " access-token)}
+                             :form-params  graphql
                              :content-type :json
-                             :accept :json
-                             :as :json})]
+                             :accept       :json
+                             :as           :json})]
     (-> response :body unpack :data)))
 
 (defn pull-requests
@@ -73,6 +73,18 @@
   []
   (users* (config :organization) (config :access-token)))
 
+(defn active-repositories*
+  [org access-token]
+  (-> (fetch :active-repositories {:query (str "org:" org " archived:false")} access-token)
+      (get-in [:search :nodes])
+      (doto (-> (count) (println "active repositories fetched")))))
+
+(defn active-repositories
+  "Fetches users who are members of the configured organization"
+  []
+  (active-repositories* (config :organization) (config :access-token)))
+
+
 (defn earliest [reviews]
   (when (seq reviews)
     (apply t/min (map :submittedAt reviews))))
@@ -82,12 +94,14 @@
     (apply t/max (map :submittedAt reviews))))
 
 (defn label-periods [m k]
-  (let [at (util/est (get m k))]
-    (assoc m k (util/year-month-day at)
-             :week (util/year-week at)
-             :month (util/year-month at)
-             :quarter (util/year-quarter at)
-             :year (util/year at))))
+  (let [at (some-> (get m k) (util/est))]
+    (if at
+      (assoc m k (util/year-month-day at)
+               :week (util/year-week at)
+               :month (util/year-month at)
+               :quarter (util/year-quarter at)
+               :year (util/year at))
+      m)))
 
 (defn calc-pull-request-review-hours [pull-request]
   (let [reviews (->> (get-in pull-request [:reviews :nodes])
@@ -107,8 +121,8 @@
         reviewed-at (:submittedAt review)
         created-at (:createdAt pull-request)
         merged-at (:mergedAt pull-request)]
-    {:hoursToReview  (util/hours-between created-at reviewed-at)
-     :hoursToMerge   (util/hours-between created-at merged-at)}))
+    {:hoursToReview (util/hours-between created-at reviewed-at)
+     :hoursToMerge  (util/hours-between created-at merged-at)}))
 
 (defn groom-pull-request [pull-request]
   (-> pull-request
@@ -165,11 +179,13 @@
 (defn bucket-review-times [reviews]
   (util/buckets2rows
     (let [scalar-fn (fn [reviews]
-                      (if (seq reviews)
-                        (stats/mean
-                          (for [review reviews]
-                            (:hoursToReview (calc-review-review-hours review))))
-                        0.0))]
+                      (let [review-hours (->> reviews
+                                              (map calc-review-review-hours)
+                                              (map :hoursToReview)
+                                              (remove nil?))]
+                        (if (seq review-hours)
+                          (stats/mean review-hours)
+                          0.0)))]
       (util/bucket-by :submittedAt scalar-fn reviews))))
 
 (def *login-group-pairs

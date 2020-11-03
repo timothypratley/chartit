@@ -10,10 +10,7 @@ query SearchPullRequest($query:String!) {
         assignees(first:20) {
           nodes {
             ... on User {
-              login
-            }
-          }
-        }
+              login }}}
         repository {name}
         url
         title
@@ -23,7 +20,7 @@ query SearchPullRequest($query:String!) {
               author {login}
               state
               submittedAt
-              url}}}}}}}
+              url }}}}}}}
 
 query Users($org:String!) {
   organization(login:$org) {
@@ -33,4 +30,10 @@ query Users($org:String!) {
           login
           name
           url
-          avatarUrl}}}}}
+          avatarUrl }}}}}
+
+query ActiveRepositories($query:String!) {
+  search(query:$query, type:REPOSITORY, first:100) {
+    nodes {
+      ... on Repository {
+        name }}}}
