@@ -7,11 +7,15 @@ query SearchPullRequest($query:String!) {
         updatedAt
         mergedAt
         author {login}
-        authors(first:10) {
+        commits(first:20) {
           nodes {
-            ... on User {
-              login }}}
-        assignees(first:20) {
+            ... on PullRequestCommit {
+              commit {
+                authors(first:10) {
+                  nodes {
+                    ... on GitActor {
+                      user { login }}}}}}}}
+        assignees(first:10) {
           nodes {
             ... on User {
               login }}}

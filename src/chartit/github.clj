@@ -126,9 +126,14 @@
 
 (defn groom-pull-request [pull-request]
   (-> pull-request
-      (select-keys [:mergedAt :author :authors :assignees :url :title])
+      (select-keys [:mergedAt :author :assignees :url :title])
       (update :assignees (fn [assignees]
                            (str/join " " (map :login (:nodes assignees)))))
+      (assoc :co-authors (str/join " "
+                                   (distinct
+                                     (map #(-> % :user :login)
+                                          (mapcat #(-> % :commit :authors :nodes)
+                                                  (:nodes (:commits pull-request)))))))
       (merge (calc-pull-request-review-hours pull-request))
       (label-periods :mergedAt)))
 

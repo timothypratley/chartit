@@ -32,16 +32,22 @@
                         "pull requests merged"
                         github/pull-requests-as-rows
                         github/bucket-pull-requests)
-  (gsheet/create-sheets :pull-requests-by-collaborators
+  (gsheet/create-sheets :pull-requests-by-assignee-or-coauthor
                         (reduce
                           (fn [acc pull-request]
-                            (let [contributors (cons (map #(-> % :login) (:authors pull-request))
-                                                     (map #(-> % :login) (:assignees pull-request)))]
+                            (let [contributors (remove nil?
+                                                       (distinct
+                                                         (concat (map #(-> % :user :login)
+                                                                      (mapcat #(-> % :commit :authors :nodes)
+                                                                              (:nodes (:commits pull-request))))
+                                                                 (map #(-> % :user :login)
+                                                                      (:nodes (:assignees pull-request))))))]
                               (reduce
                                 (fn [acc contributor]
                                   (update acc contributor conj pull-request))
                                 acc
                                 contributors)))
+                          {}
                           pull-requests)
                         "pull requests merged as author, co-author or assignee"
                         github/pull-requests-as-rows
@@ -161,6 +167,26 @@
 
 (comment
   (def pull-requests (local-file/read-file "pull_requests"))
+  (gsheet/init!)
+  (gsheet/create-sheets :pull-requests-by-assignees-and-coauthors
+                        (reduce
+                          (fn [acc pull-request]
+                            (let [contributors (remove nil? (distinct
+                                                              (concat (map #(-> % :user :login)
+                                                                           (mapcat #(-> % :commit :authors :nodes)
+                                                                                   (:nodes (:commits pull-request))))
+                                                                      (map #(-> % :login)
+                                                                           (:nodes (:assignees pull-request))))))]
+                              (reduce
+                                (fn [acc contributor]
+                                  (update acc contributor conj pull-request))
+                                acc
+                                contributors)))
+                          {}
+                          pull-requests)
+                        "pull requests merged as author, co-author or assignee"
+                        github/pull-requests-as-rows
+                        github/bucket-pull-requests)
   (def g (github/users))
   (def j (justworks/company-directory))
   (def g2 (util/index-by :name g))
