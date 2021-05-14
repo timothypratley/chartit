@@ -32,6 +32,20 @@
                         "pull requests merged"
                         github/pull-requests-as-rows
                         github/bucket-pull-requests)
+  (gsheet/create-sheets :pull-requests-by-collaborators
+                        (reduce
+                          (fn [acc pull-request]
+                            (let [contributors (cons (map #(-> % :login) (:authors pull-request))
+                                                     (map #(-> % :login) (:assignees pull-request)))]
+                              (reduce
+                                (fn [acc contributor]
+                                  (update acc contributor conj pull-request))
+                                acc
+                                contributors)))
+                          pull-requests)
+                        "pull requests merged as author, co-author or assignee"
+                        github/pull-requests-as-rows
+                        github/bucket-pull-requests)
   (gsheet/create-sheets :pull-request-reviews-by-person
                         (group-by #(-> % :author :login)
                                   (github/reviews pull-requests))

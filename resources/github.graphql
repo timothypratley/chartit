@@ -7,6 +7,10 @@ query SearchPullRequest($query:String!) {
         updatedAt
         mergedAt
         author {login}
+        authors(first:10) {
+          nodes {
+            ... on User {
+              login }}}
         assignees(first:20) {
           nodes {
             ... on User {
