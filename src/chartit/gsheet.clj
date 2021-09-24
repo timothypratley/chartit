@@ -89,7 +89,7 @@
       (do (println "Creating spreadsheet:" title)
           (create-spreadsheet title))))
 
-(defn rolling-averages-chart-spec [sheet-id title end-row-index]
+(defn rolling-averages-chart-spec [sheet-id title end-row-index number-of-columns]
   {"title"                   title
    "fontName"                "Roboto",
    "hiddenDimensionStrategy" "SKIP_HIDDEN_ROWS_AND_COLUMNS"
@@ -104,38 +104,21 @@
                                                                                    "startColumnIndex" 0,
                                                                                    "startRowIndex"    0}]}}}],
                               "headerCount" 1,
-                              "series"      [{"series"     {"sourceRange" {"sources" [{"endColumnIndex"   2,
-                                                                                       "endRowIndex"      end-row-index,
-                                                                                       "sheetId"          sheet-id,
-                                                                                       "startColumnIndex" 1,
-                                                                                       "startRowIndex"    0}]}},
-                                              "targetAxis" "LEFT_AXIS"}
-                                             {"series"     {"sourceRange" {"sources" [{"endColumnIndex"   3,
-                                                                                       "endRowIndex"      end-row-index,
-                                                                                       "sheetId"          sheet-id,
-                                                                                       "startColumnIndex" 2,
-                                                                                       "startRowIndex"    0}]}},
-                                              "targetAxis" "LEFT_AXIS"}
-                                             {"series"     {"sourceRange" {"sources" [{"endColumnIndex"   4,
-                                                                                       "endRowIndex"      end-row-index,
-                                                                                       "sheetId"          sheet-id,
-                                                                                       "startColumnIndex" 3,
-                                                                                       "startRowIndex"    0}]}},
-                                              "targetAxis" "LEFT_AXIS"}
-                                             {"series"     {"sourceRange" {"sources" [{"endColumnIndex"   5,
-                                                                                       "endRowIndex"      end-row-index,
-                                                                                       "sheetId"          sheet-id,
-                                                                                       "startColumnIndex" 4,
-                                                                                       "startRowIndex"    0}]}},
-                                              "targetAxis" "LEFT_AXIS"}]}})
+                              "series"      (for [i (range 1 (+ 2 number-of-columns))]
+                                              {"series"     {"sourceRange" {"sources" [{"endColumnIndex"   (inc i),
+                                                                                        "endRowIndex"      end-row-index,
+                                                                                        "sheetId"          sheet-id,
+                                                                                        "startColumnIndex" i,
+                                                                                        "startRowIndex"    0}]}},
+                                               "targetAxis" "LEFT_AXIS"})}})
 
-(defn pull-request-velocity-chart [sheet-id title number-of-rows]
+(defn pull-request-velocity-chart [sheet-id title number-of-rows number-of-columns]
   {"chart" {"position" {"overlayPosition" {"widthPixels"  1100
                                            "heightPixels" 550
                                            "anchorCell"   {"rowIndex"    2
                                                            "columnIndex" 0
                                                            "sheetId"     sheet-id}}}
-            "spec"     (rolling-averages-chart-spec sheet-id title (inc number-of-rows))}})
+            "spec"     (rolling-averages-chart-spec sheet-id title (inc number-of-rows) number-of-columns)}})
 
 (defn create-chart
   "If chart-id supplied, will delete and recreate, otherwise creates new"
@@ -152,8 +135,8 @@
       (last)
       (:addChart)))
 
-(defn create-velocity-chart [spreadsheet-id sheet-id chart-id title number-of-rows]
-  (create-chart spreadsheet-id chart-id (pull-request-velocity-chart sheet-id title number-of-rows)))
+(defn create-velocity-chart [spreadsheet-id sheet-id chart-id title number-of-rows number-of-columns]
+  (create-chart spreadsheet-id chart-id (pull-request-velocity-chart sheet-id title number-of-rows number-of-columns)))
 
 ;; TODO: could cache the data, compare, and only upload new rows
 (defn upload-sheet-and-chart [spreadsheet-id title metric rows buckets]
@@ -166,7 +149,7 @@
                         (util/with-rolling 4)
                         (util/with-rolling 13)
                         (util/with-rolling 26))))
-    (create-velocity-chart spreadsheet-id sheetId chartId title (count rows))))
+    (create-velocity-chart spreadsheet-id sheetId chartId title (count rows) 4)))
 
 (defn create-sheets [spreadsheet-key m metric row-fn bucket-fn]
   (let [spreadsheet-id (or (get-in (config :spreadsheets) [spreadsheet-key :id])
@@ -179,3 +162,14 @@
                               metric
                               (row-fn vs)
                               (bucket-fn vs)))))
+
+#_(defn f [spreadsheet-key m metric row-fn bucket-fn]
+  (let [spreadsheet-id (or (get-in (config :spreadsheets) [spreadsheet-key :id])
+                           (ensure-spreadsheet
+                             (str (when-let [p (config :prefix)] (str p " "))
+                                  (str/replace (name spreadsheet-key) "-" " "))))
+        z (sort-by #(str/capitalize (key %)) m)]
+    (set-data spreadsheet-id (str title "_weekly")
+              (cons ["week" metric "4 week average" "quarterly average" "6 month average"]
+                    (bucket-fn z)))
+    (create-velocity-chart spreadsheet-id sheetId chartId title (count rows) (count m))))

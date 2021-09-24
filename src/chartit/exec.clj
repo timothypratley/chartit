@@ -26,6 +26,11 @@
                         "pull requests merged"
                         github/pull-requests-as-rows
                         github/bucket-pull-requests-with-tenure)
+  #_(gsheet/f :pull-requests-comparison
+            pull-requests
+            "pull requests merged"
+            github/pull-requests-as-rows
+            github/bucket-pull-requests)
   (gsheet/create-sheets :pull-requests-by-person
                         (group-by #(-> % :author :login)
                                   pull-requests)
